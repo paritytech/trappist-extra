@@ -87,7 +87,7 @@ dependencies {
         // this workaround is necessary.
 
         def ndk_command = """cargo ndk \
-            -t arm64-v8a -t x86_64 \
+            -t arm64-v8a \
             -o ../android/app/src/main/jniLibs build $profileMode"""
 
         workingDir "../../smoldot-flutter"
