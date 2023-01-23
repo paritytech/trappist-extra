@@ -49,7 +49,25 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late Future client_init;
   int _counter = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    api.initLogger().listen((event) {
+      debugPrint(
+          '${event.level} [${event.tag}]: ${event.msg}(rust_time=${event.timeMillis})');
+    });
+    api.setJsonRpcResponseSink().listen((response) {
+      debugPrint('JSON-RPC response: $response');
+    });
+    client_init = api.initLightClient();
+    api.jsonRpcSend(
+        chainId: 0,
+        req:
+            "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"chain_subscribeNewHeads\",\"params\":[]}");
+  }
 
   Future<void> _incrementCounter() async {
     int result = await api.add(left: _counter, right: 1);

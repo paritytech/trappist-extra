@@ -188,8 +188,9 @@ cargo install cargo-ndk
 
 Lastly, we need to configure an environment variable for the Gradle build tool. Create or replace a `~/.gradle/gradle.properties` file to contain the following
 ```
-ANDROID_NDK=$NDK_HOME
+ANDROID_NDK=/home/%username%/android/android-ndk-r21e
 ```
+Note: replace `%username%` by your actual username (using the $NDK-HOME environment varialbe apparently doesn't work here, the full path is needed).
 ### Build & run the Flutter Android app
 
 To re-generate the rust-to-flutter glue code (bridge), run the following command:

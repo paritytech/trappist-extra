@@ -11,9 +11,40 @@ import 'package:meta/meta.dart';
 import 'dart:ffi' as ffi;
 
 abstract class SmoldotFlutter {
+  Stream<LogEntry> initLogger({dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kInitLoggerConstMeta;
+
+  Future<void> initLightClient({dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kInitLightClientConstMeta;
+
+  Future<void> jsonRpcSend(
+      {required int chainId, required String req, dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kJsonRpcSendConstMeta;
+
+  Stream<String> setJsonRpcResponseSink({dynamic hint});
+
+  FlutterRustBridgeTaskConstMeta get kSetJsonRpcResponseSinkConstMeta;
+
   Future<int> add({required int left, required int right, dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kAddConstMeta;
+}
+
+class LogEntry {
+  final int timeMillis;
+  final int level;
+  final String tag;
+  final String msg;
+
+  LogEntry({
+    required this.timeMillis,
+    required this.level,
+    required this.tag,
+    required this.msg,
+  });
 }
 
 class SmoldotFlutterImpl implements SmoldotFlutter {
@@ -25,6 +56,74 @@ class SmoldotFlutterImpl implements SmoldotFlutter {
   factory SmoldotFlutterImpl.wasm(FutureOr<WasmModule> module) =>
       SmoldotFlutterImpl(module as ExternalLibrary);
   SmoldotFlutterImpl.raw(this._platform);
+  Stream<LogEntry> initLogger({dynamic hint}) {
+    return _platform.executeStream(FlutterRustBridgeTask(
+      callFfi: (port_) => _platform.inner.wire_init_logger(port_),
+      parseSuccessData: _wire2api_log_entry,
+      constMeta: kInitLoggerConstMeta,
+      argValues: [],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kInitLoggerConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "init_logger",
+        argNames: [],
+      );
+
+  Future<void> initLightClient({dynamic hint}) {
+    return _platform.executeNormal(FlutterRustBridgeTask(
+      callFfi: (port_) => _platform.inner.wire_init_light_client(port_),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kInitLightClientConstMeta,
+      argValues: [],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kInitLightClientConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "init_light_client",
+        argNames: [],
+      );
+
+  Future<void> jsonRpcSend(
+      {required int chainId, required String req, dynamic hint}) {
+    var arg0 = api2wire_usize(chainId);
+    var arg1 = _platform.api2wire_String(req);
+    return _platform.executeNormal(FlutterRustBridgeTask(
+      callFfi: (port_) => _platform.inner.wire_json_rpc_send(port_, arg0, arg1),
+      parseSuccessData: _wire2api_unit,
+      constMeta: kJsonRpcSendConstMeta,
+      argValues: [chainId, req],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kJsonRpcSendConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "json_rpc_send",
+        argNames: ["chainId", "req"],
+      );
+
+  Stream<String> setJsonRpcResponseSink({dynamic hint}) {
+    return _platform.executeStream(FlutterRustBridgeTask(
+      callFfi: (port_) =>
+          _platform.inner.wire_set_json_rpc_response_sink(port_),
+      parseSuccessData: _wire2api_String,
+      constMeta: kSetJsonRpcResponseSinkConstMeta,
+      argValues: [],
+      hint: hint,
+    ));
+  }
+
+  FlutterRustBridgeTaskConstMeta get kSetJsonRpcResponseSinkConstMeta =>
+      const FlutterRustBridgeTaskConstMeta(
+        debugName: "set_json_rpc_response_sink",
+        argNames: [],
+      );
+
   Future<int> add({required int left, required int right, dynamic hint}) {
     var arg0 = api2wire_usize(left);
     var arg1 = api2wire_usize(right);
@@ -48,12 +147,53 @@ class SmoldotFlutterImpl implements SmoldotFlutter {
   }
 // Section: wire2api
 
+  String _wire2api_String(dynamic raw) {
+    return raw as String;
+  }
+
+  int _wire2api_i32(dynamic raw) {
+    return raw as int;
+  }
+
+  int _wire2api_i64(dynamic raw) {
+    return castInt(raw);
+  }
+
+  LogEntry _wire2api_log_entry(dynamic raw) {
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return LogEntry(
+      timeMillis: _wire2api_i64(arr[0]),
+      level: _wire2api_i32(arr[1]),
+      tag: _wire2api_String(arr[2]),
+      msg: _wire2api_String(arr[3]),
+    );
+  }
+
+  int _wire2api_u8(dynamic raw) {
+    return raw as int;
+  }
+
+  Uint8List _wire2api_uint_8_list(dynamic raw) {
+    return raw as Uint8List;
+  }
+
+  void _wire2api_unit(dynamic raw) {
+    return;
+  }
+
   int _wire2api_usize(dynamic raw) {
     return castInt(raw);
   }
 }
 
 // Section: api2wire
+
+@protected
+int api2wire_u8(int raw) {
+  return raw;
+}
 
 @protected
 int api2wire_usize(int raw) {
@@ -66,6 +206,18 @@ class SmoldotFlutterPlatform extends FlutterRustBridgeBase<SmoldotFlutterWire> {
       : super(SmoldotFlutterWire(dylib));
 
 // Section: api2wire
+
+  @protected
+  ffi.Pointer<wire_uint_8_list> api2wire_String(String raw) {
+    return api2wire_uint_8_list(utf8.encoder.convert(raw));
+  }
+
+  @protected
+  ffi.Pointer<wire_uint_8_list> api2wire_uint_8_list(Uint8List raw) {
+    final ans = inner.new_uint_8_list_0(raw.length);
+    ans.ref.ptr.asTypedList(raw.length).setAll(0, raw);
+    return ans;
+  }
 
 // Section: finalizer
 
@@ -168,6 +320,67 @@ class SmoldotFlutterWire implements FlutterRustBridgeWireBase {
   late final _init_frb_dart_api_dl = _init_frb_dart_api_dlPtr
       .asFunction<int Function(ffi.Pointer<ffi.Void>)>();
 
+  void wire_init_logger(
+    int port_,
+  ) {
+    return _wire_init_logger(
+      port_,
+    );
+  }
+
+  late final _wire_init_loggerPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_init_logger');
+  late final _wire_init_logger =
+      _wire_init_loggerPtr.asFunction<void Function(int)>();
+
+  void wire_init_light_client(
+    int port_,
+  ) {
+    return _wire_init_light_client(
+      port_,
+    );
+  }
+
+  late final _wire_init_light_clientPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_init_light_client');
+  late final _wire_init_light_client =
+      _wire_init_light_clientPtr.asFunction<void Function(int)>();
+
+  void wire_json_rpc_send(
+    int port_,
+    int chain_id,
+    ffi.Pointer<wire_uint_8_list> req,
+  ) {
+    return _wire_json_rpc_send(
+      port_,
+      chain_id,
+      req,
+    );
+  }
+
+  late final _wire_json_rpc_sendPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Int64, ffi.UintPtr,
+              ffi.Pointer<wire_uint_8_list>)>>('wire_json_rpc_send');
+  late final _wire_json_rpc_send = _wire_json_rpc_sendPtr
+      .asFunction<void Function(int, int, ffi.Pointer<wire_uint_8_list>)>();
+
+  void wire_set_json_rpc_response_sink(
+    int port_,
+  ) {
+    return _wire_set_json_rpc_response_sink(
+      port_,
+    );
+  }
+
+  late final _wire_set_json_rpc_response_sinkPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_set_json_rpc_response_sink');
+  late final _wire_set_json_rpc_response_sink =
+      _wire_set_json_rpc_response_sinkPtr.asFunction<void Function(int)>();
+
   void wire_add(
     int port_,
     int left,
@@ -186,6 +399,21 @@ class SmoldotFlutterWire implements FlutterRustBridgeWireBase {
   late final _wire_add =
       _wire_addPtr.asFunction<void Function(int, int, int)>();
 
+  ffi.Pointer<wire_uint_8_list> new_uint_8_list_0(
+    int len,
+  ) {
+    return _new_uint_8_list_0(
+      len,
+    );
+  }
+
+  late final _new_uint_8_list_0Ptr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<wire_uint_8_list> Function(
+              ffi.Int32)>>('new_uint_8_list_0');
+  late final _new_uint_8_list_0 = _new_uint_8_list_0Ptr
+      .asFunction<ffi.Pointer<wire_uint_8_list> Function(int)>();
+
   void free_WireSyncReturn(
     WireSyncReturn ptr,
   ) {
@@ -202,6 +430,13 @@ class SmoldotFlutterWire implements FlutterRustBridgeWireBase {
 }
 
 class _Dart_Handle extends ffi.Opaque {}
+
+class wire_uint_8_list extends ffi.Struct {
+  external ffi.Pointer<ffi.Uint8> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
 
 typedef DartPostCObjectFnType = ffi.Pointer<
     ffi.NativeFunction<ffi.Bool Function(DartPort, ffi.Pointer<ffi.Void>)>>;

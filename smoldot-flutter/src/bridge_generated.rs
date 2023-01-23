@@ -21,6 +21,54 @@ use std::sync::Arc;
 
 // Section: wire functions
 
+fn wire_init_logger_impl(port_: MessagePort) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "init_logger",
+            port: Some(port_),
+            mode: FfiCallMode::Stream,
+        },
+        move || move |task_callback| init_logger(task_callback.stream_sink()),
+    )
+}
+fn wire_init_light_client_impl(port_: MessagePort) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "init_light_client",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || move |task_callback| init_light_client(),
+    )
+}
+fn wire_json_rpc_send_impl(
+    port_: MessagePort,
+    chain_id: impl Wire2Api<usize> + UnwindSafe,
+    req: impl Wire2Api<String> + UnwindSafe,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "json_rpc_send",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_chain_id = chain_id.wire2api();
+            let api_req = req.wire2api();
+            move |task_callback| json_rpc_send(api_chain_id, api_req)
+        },
+    )
+}
+fn wire_set_json_rpc_response_sink_impl(port_: MessagePort) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "set_json_rpc_response_sink",
+            port: Some(port_),
+            mode: FfiCallMode::Stream,
+        },
+        move || move |task_callback| set_json_rpc_response_sink(task_callback.stream_sink()),
+    )
+}
 fn wire_add_impl(
     port_: MessagePort,
     left: impl Wire2Api<usize> + UnwindSafe,
@@ -61,12 +109,32 @@ where
         (!self.is_null()).then(|| self.wire2api())
     }
 }
+
+impl Wire2Api<u8> for u8 {
+    fn wire2api(self) -> u8 {
+        self
+    }
+}
+
 impl Wire2Api<usize> for usize {
     fn wire2api(self) -> usize {
         self
     }
 }
 // Section: impl IntoDart
+
+impl support::IntoDart for LogEntry {
+    fn into_dart(self) -> support::DartAbi {
+        vec![
+            self.time_millis.into_dart(),
+            self.level.into_dart(),
+            self.tag.into_dart(),
+            self.msg.into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl support::IntoDartExceptPrimitive for LogEntry {}
 
 // Section: executor
 
