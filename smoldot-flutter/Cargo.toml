@@ -9,9 +9,8 @@ crate-type = ["cdylib", "staticlib"]
 [dependencies]
 android_logger = "0.12"
 anyhow = "1"
-curve25519-dalek = "=4.0.0-pre.5"
 env_logger = "0.10.0"
-flutter_rust_bridge = "<1.62.0"
+flutter_rust_bridge = "1"
 lazy_static = "1.4.0"
 log = { version = "0.4.17" }
 simplelog = "0.12.0"
