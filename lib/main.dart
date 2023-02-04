@@ -3,6 +3,7 @@ import 'ffi.dart';
 import 'dart:convert';
 import 'package:deep_pick/deep_pick.dart';
 import 'package:blinking_text/blinking_text.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(const MyApp());
@@ -55,6 +56,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   late Future client_init;
   int? _block = null;
+  NumberFormat _numberFormat = NumberFormat.decimalPattern();
 
   @override
   void initState() {
@@ -138,7 +140,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 'Best block:',
               ),
               Text(
-                '$_block',
+                '${_numberFormat.format(_block)}',
                 style: Theme.of(context).textTheme.headline2!
                     .copyWith(color: Colors.black, fontFamily: 'Syncopate-Bold'),
               ),
