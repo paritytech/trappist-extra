@@ -39,6 +39,9 @@ dependencies:
   ffi: ^2.0.1
   flutter_rust_bridge: ^1.61.1
   freezed_annotation: ^2.2.0
+  deep_pick: ^0.10.0
+  blinking_text: ^1.0.2
+  intl: ^0.18.0
 
 dev_dependencies:
   flutter_test:
@@ -95,3 +98,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+  fonts:
+    - family: Syncopate
+      fonts:
+        - asset: fonts/Syncopate-Regular.ttf
+    - family: Syncopate-Bold
+      fonts:
+        - asset: fonts/Syncopate-Bold.ttf
+          weight: 700

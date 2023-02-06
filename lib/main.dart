@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'ffi.dart';
+import 'dart:convert';
+import 'package:deep_pick/deep_pick.dart';
+import 'package:blinking_text/blinking_text.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(const MyApp());
@@ -23,9 +27,10 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.pink,
+        fontFamily: 'Syncopate'
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'smoldot Flutter Demo'),
     );
   }
 }
@@ -50,7 +55,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late Future client_init;
-  int _counter = 0;
+  int? _block = null;
+  NumberFormat _numberFormat = NumberFormat.decimalPattern();
 
   @override
   void initState() {
@@ -60,6 +66,13 @@ class _MyHomePageState extends State<MyHomePage> {
           '${event.level} [${event.tag}]: ${event.msg}(rust_time=${event.timeMillis})');
     });
     api.setJsonRpcResponseSink().listen((response) {
+      final decodedData = jsonDecode(response);
+      final int? number = pick(decodedData, 'params', 'result', 'number').asIntOrNull();
+      if (number != null) {
+        setState(() {
+          _block = number;
+        });
+      }
       debugPrint('JSON-RPC response: $response');
     });
     client_init = api.initLightClient();
@@ -70,15 +83,15 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _incrementCounter() async {
-    int result = await api.add(left: _counter, right: 1);
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter = result;
-    });
+    // int result = await api.add(left: _counter, right: 1);
+    // setState(() {
+    //   // This call to setState tells the Flutter framework that something has
+    //   // changed in this State, which causes it to rerun the build method below
+    //   // so that the display can reflect the updated values. If we changed
+    //   // _counter without calling setState(), then the build method would not be
+    //   // called again, and so nothing would appear to happen.
+    //   _counter = result;
+    // });
   }
 
   @override
@@ -115,21 +128,33 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
+            const Text('Chain:'),
             Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
+              'Polkadot',
+              style: Theme.of(context).textTheme.headline6!
+                  .copyWith(color: Colors.black, fontFamily: 'Syncopate-Bold')
             ),
+            SizedBox(height: 20),
+            if (_block != null) ... [
+              const Text(
+                'Best block:',
+              ),
+              Text(
+                '${_numberFormat.format(_block)}',
+                style: Theme.of(context).textTheme.headline2!
+                    .copyWith(color: Colors.black, fontFamily: 'Syncopate-Bold'),
+              ),
+            ] else ... [
+              BlinkText('Syncing', duration: Duration(seconds: 1)),
+            ],
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _incrementCounter,
+      //   tooltip: 'Increment',
+      //   child: const Icon(Icons.add),
+      // ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
