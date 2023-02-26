@@ -24,7 +24,7 @@ First, complete the [basic Rust setup instructions](./docs/rust-setup.md). Then,
 
 ### Platform setup
 
-Depending on the device you want to deploy on either choose [Linux & Android on Linux](./docs/linux-instructions.md) or [MacOS, IOS & Android on Macos](./docs/macos-instructions.md).
+Depending on the device you want to deploy on either choose [Linux & Android on Linux](./docs/linux-instructions.md) or [macOS, iOS & Android on macOS](./docs/macos-instructions.md).
 
 ## Current limitations
 
