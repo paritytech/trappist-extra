@@ -16,21 +16,20 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Trappist Extra',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.pink,
-        fontFamily: 'Syncopate'
-      ),
-      home: const MyHomePage(title: 'smoldot Flutter Demo'),
+          // This is the theme of your application.
+          //
+          // Try running your application with "flutter run". You'll see the
+          // application has a blue toolbar. Then, without quitting the app, try
+          // changing the primarySwatch below to Colors.green and then invoke
+          // "hot reload" (press "r" in the console where you ran "flutter run",
+          // or simply save your changes to "hot reload" in a Flutter IDE).
+          // Notice that the counter didn't reset back to zero; the application
+          // is not restarted.
+          primarySwatch: Colors.pink,
+          fontFamily: 'Syncopate'),
+      home: const MyHomePage(title: 'Trappist Extra'),
     );
   }
 }
@@ -67,7 +66,8 @@ class _MyHomePageState extends State<MyHomePage> {
     });
     api.setJsonRpcResponseSink().listen((response) {
       final decodedData = jsonDecode(response);
-      final int? number = pick(decodedData, 'params', 'result', 'number').asIntOrNull();
+      final int? number =
+          pick(decodedData, 'params', 'result', 'number').asIntOrNull();
       if (number != null) {
         setState(() {
           _block = number;
@@ -104,10 +104,13 @@ class _MyHomePageState extends State<MyHomePage> {
     // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: Text(widget.title),
+          titleTextStyle: Theme.of(context)
+              .textTheme
+              .headline6!
+              .copyWith(color: Colors.white, fontFamily: 'Syncopate-Bold')),
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
@@ -129,23 +132,21 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text('Chain:'),
-            Text(
-              'Polkadot',
-              style: Theme.of(context).textTheme.headline6!
-                  .copyWith(color: Colors.black, fontFamily: 'Syncopate-Bold')
-            ),
-            SizedBox(height: 20),
-            if (_block != null) ... [
+            Text('Polkadot',
+                style: Theme.of(context).textTheme.headline6!.copyWith(
+                    color: Colors.black, fontFamily: 'Syncopate-Bold')),
+            const SizedBox(height: 20),
+            if (_block != null) ...[
               const Text(
                 'Best block:',
               ),
               Text(
-                '${_numberFormat.format(_block)}',
-                style: Theme.of(context).textTheme.headline2!
-                    .copyWith(color: Colors.black, fontFamily: 'Syncopate-Bold'),
+                _numberFormat.format(_block),
+                style: Theme.of(context).textTheme.headline2!.copyWith(
+                    color: Colors.black, fontFamily: 'Syncopate-Bold'),
               ),
-            ] else ... [
-              BlinkText('Syncing', duration: Duration(seconds: 1)),
+            ] else ...[
+              const BlinkText('Syncing', duration: Duration(seconds: 1)),
             ],
           ],
         ),
@@ -155,6 +156,48 @@ class _MyHomePageState extends State<MyHomePage> {
       //   tooltip: 'Increment',
       //   child: const Icon(Icons.add),
       // ), // This trailing comma makes auto-formatting nicer for build methods.
+      drawer: Drawer(
+        // Add a ListView to the drawer. This ensures the user can scroll
+        // through the options in the drawer if there isn't enough vertical
+        // space to fit everything.
+        child: ListView(
+          // Important: Remove any padding from the ListView.
+          padding: EdgeInsets.zero,
+          children: [
+            SizedBox(
+              height: 64.0,
+              child: DrawerHeader(
+                decoration: const BoxDecoration(
+                  color: Colors.pink,
+                ),
+                child: Text('Chains',
+                    style: Theme.of(context).textTheme.headline6!.copyWith(
+                        color: Colors.white, fontFamily: 'Syncopate-Bold')),
+              ),
+            ),
+            ListTile(
+              leading: const FlutterLogo(),
+              title: const Text('Polkadot'),
+              onTap: () {
+                // Update the state of the app
+                // ...
+                // Then close the drawer
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const FlutterLogo(),
+              title: const Text('Statemint'),
+              onTap: () {
+                // Update the state of the app
+                // ...
+                // Then close the drawer
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
