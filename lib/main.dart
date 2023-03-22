@@ -6,6 +6,7 @@ import 'package:vector_graphics/vector_graphics.dart';
 import 'package:deep_pick/deep_pick.dart';
 import 'package:blinking_text/blinking_text.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 void main() {
   runApp(const MyApp());
@@ -77,11 +78,13 @@ class _MyHomePageState extends State<MyHomePage> {
       }
       debugPrint('JSON-RPC response: $response');
     });
-    client_init = api.initLightClient();
-    api.jsonRpcSend(
-        chainId: 0,
-        req:
-            "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"chain_subscribeNewHeads\",\"params\":[]}");
+    rootBundle.loadString("assets/chainspecs/polkadot.json").then((spec) {
+      client_init = api.initLightClient(chainSpec: spec);
+      api.jsonRpcSend(
+          chainId: 0,
+          req:
+              "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"chain_subscribeNewHeads\",\"params\":[]}");
+    });
   }
 
   // Future<void> _incrementCounter() async {

@@ -31,14 +31,17 @@ fn wire_init_logger_impl(port_: MessagePort) {
         move || move |task_callback| init_logger(task_callback.stream_sink()),
     )
 }
-fn wire_init_light_client_impl(port_: MessagePort) {
+fn wire_init_light_client_impl(port_: MessagePort, chain_spec: impl Wire2Api<String> + UnwindSafe) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
             debug_name: "init_light_client",
             port: Some(port_),
             mode: FfiCallMode::Normal,
         },
-        move || move |task_callback| init_light_client(),
+        move || {
+            let api_chain_spec = chain_spec.wire2api();
+            move |task_callback| init_light_client(api_chain_spec)
+        },
     )
 }
 fn wire_json_rpc_send_impl(

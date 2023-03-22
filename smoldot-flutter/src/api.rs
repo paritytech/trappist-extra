@@ -32,7 +32,7 @@ lazy_static! {
         RwLock::new(None);
 }
 
-pub fn init_light_client() -> anyhow::Result<()> {
+pub fn init_light_client(chain_spec: String) -> anyhow::Result<()> {
     let mut client_lock = CLIENT.lock().unwrap();
     assert!(client_lock.is_none());
 
@@ -62,7 +62,7 @@ pub fn init_light_client() -> anyhow::Result<()> {
             // The most important field of the configuration is the chain specification. This is a
             // JSON document containing all the information necessary for the client to connect to said
             // chain.
-            specification: include_str!("../polkadot.json"),
+            specification: &chain_spec,
 
             // If `true`, the chain will not be able to handle JSON-RPC requests. This can be used
             // to save up some resources.
