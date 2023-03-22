@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'ffi.dart';
 import 'dart:convert';
+import 'package:vector_graphics/vector_graphics.dart';
 import 'package:deep_pick/deep_pick.dart';
 import 'package:blinking_text/blinking_text.dart';
 import 'package:intl/intl.dart';
@@ -55,7 +57,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   late Future client_init;
   int? _block = null;
-  NumberFormat _numberFormat = NumberFormat.decimalPattern();
+  final NumberFormat _numberFormat = NumberFormat.decimalPattern();
 
   @override
   void initState() {
@@ -82,17 +84,17 @@ class _MyHomePageState extends State<MyHomePage> {
             "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"chain_subscribeNewHeads\",\"params\":[]}");
   }
 
-  Future<void> _incrementCounter() async {
-    // int result = await api.add(left: _counter, right: 1);
-    // setState(() {
-    //   // This call to setState tells the Flutter framework that something has
-    //   // changed in this State, which causes it to rerun the build method below
-    //   // so that the display can reflect the updated values. If we changed
-    //   // _counter without calling setState(), then the build method would not be
-    //   // called again, and so nothing would appear to happen.
-    //   _counter = result;
-    // });
-  }
+  // Future<void> _incrementCounter() async {
+  // int result = await api.add(left: _counter, right: 1);
+  // setState(() {
+  //   // This call to setState tells the Flutter framework that something has
+  //   // changed in this State, which causes it to rerun the build method below
+  //   // so that the display can reflect the updated values. If we changed
+  //   // _counter without calling setState(), then the build method would not be
+  //   // called again, and so nothing would appear to happen.
+  //   _counter = result;
+  // });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
           title: Text(widget.title),
           titleTextStyle: Theme.of(context)
               .textTheme
-              .headline6!
+              .titleLarge!
               .copyWith(color: Colors.white, fontFamily: 'Syncopate-Bold')),
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
@@ -133,7 +135,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             const Text('Chain:'),
             Text('Polkadot',
-                style: Theme.of(context).textTheme.headline6!.copyWith(
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
                     color: Colors.black, fontFamily: 'Syncopate-Bold')),
             const SizedBox(height: 20),
             if (_block != null) ...[
@@ -142,7 +144,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               Text(
                 _numberFormat.format(_block),
-                style: Theme.of(context).textTheme.headline2!.copyWith(
+                style: Theme.of(context).textTheme.displayMedium!.copyWith(
                     color: Colors.black, fontFamily: 'Syncopate-Bold'),
               ),
             ] else ...[
@@ -165,19 +167,29 @@ class _MyHomePageState extends State<MyHomePage> {
           padding: EdgeInsets.zero,
           children: [
             SizedBox(
-              height: 64.0,
+              height: Theme.of(context).platform == TargetPlatform.android
+                  ? 96
+                  : 64,
               child: DrawerHeader(
                 decoration: const BoxDecoration(
                   color: Colors.pink,
                 ),
                 child: Text('Chains',
-                    style: Theme.of(context).textTheme.headline6!.copyWith(
+                    style: Theme.of(context).textTheme.titleLarge!.copyWith(
                         color: Colors.white, fontFamily: 'Syncopate-Bold')),
               ),
             ),
             ListTile(
-              leading: const FlutterLogo(),
-              title: const Text('Polkadot'),
+              leading: const SvgPicture(
+                AssetBytesLoader("assets/images/logos/polkadot.svg.vec"),
+                semanticsLabel: 'Polkadot Logo',
+                height: 42,
+                width: 42,
+                fit: BoxFit.fitWidth,
+              ),
+              title: Text('Polkadot',
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                      color: Colors.black, fontFamily: 'Syncopate-Bold')),
               onTap: () {
                 // Update the state of the app
                 // ...
@@ -186,8 +198,16 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
             ListTile(
-              leading: const FlutterLogo(),
-              title: const Text('Statemint'),
+              leading: const SvgPicture(
+                AssetBytesLoader("assets/images/logos/statemint.svg.vec"),
+                semanticsLabel: 'Statemint Logo',
+                height: 42,
+                width: 42,
+                fit: BoxFit.fitWidth,
+              ),
+              title: Text('Statemint',
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                      color: Colors.black, fontFamily: 'Syncopate-Bold')),
               onTap: () {
                 // Update the state of the app
                 // ...
