@@ -7,23 +7,36 @@ pub extern "C" fn wire_init_logger(port_: i64) {
 }
 
 #[no_mangle]
-pub extern "C" fn wire_init_light_client(port_: i64, chain_spec: *mut wire_uint_8_list) {
-    wire_init_light_client_impl(port_, chain_spec)
+pub extern "C" fn wire_init_light_client(port_: i64) {
+    wire_init_light_client_impl(port_)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_json_rpc_send(port_: i64, chain_id: usize, req: *mut wire_uint_8_list) {
-    wire_json_rpc_send_impl(port_, chain_id, req)
+pub extern "C" fn wire_start_chain_sync(
+    port_: i64,
+    chain_name: *mut wire_uint_8_list,
+    chain_spec: *mut wire_uint_8_list,
+) {
+    wire_start_chain_sync_impl(port_, chain_name, chain_spec)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_set_json_rpc_response_sink(port_: i64) {
-    wire_set_json_rpc_response_sink_impl(port_)
+pub extern "C" fn wire_stop_chain_sync(port_: i64, chain_name: *mut wire_uint_8_list) {
+    wire_stop_chain_sync_impl(port_, chain_name)
 }
 
 #[no_mangle]
-pub extern "C" fn wire_add(port_: i64, left: usize, right: usize) {
-    wire_add_impl(port_, left, right)
+pub extern "C" fn wire_send_json_rpc_request(
+    port_: i64,
+    chain_name: *mut wire_uint_8_list,
+    req: *mut wire_uint_8_list,
+) {
+    wire_send_json_rpc_request_impl(port_, chain_name, req)
+}
+
+#[no_mangle]
+pub extern "C" fn wire_listen_json_rpc_responses(port_: i64, chain_name: *mut wire_uint_8_list) {
+    wire_listen_json_rpc_responses_impl(port_, chain_name)
 }
 
 // Section: allocate functions
@@ -56,7 +69,6 @@ impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
         }
     }
 }
-
 // Section: wire structs
 
 #[repr(C)]
