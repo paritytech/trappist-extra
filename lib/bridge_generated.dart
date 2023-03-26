@@ -20,7 +20,10 @@ abstract class SmoldotFlutter {
   FlutterRustBridgeTaskConstMeta get kInitLightClientConstMeta;
 
   Future<void> startChainSync(
-      {required String chainName, required String chainSpec, dynamic hint});
+      {required String chainName,
+      required String chainSpec,
+      required String database,
+      dynamic hint});
 
   FlutterRustBridgeTaskConstMeta get kStartChainSyncConstMeta;
 
@@ -95,15 +98,19 @@ class SmoldotFlutterImpl implements SmoldotFlutter {
       );
 
   Future<void> startChainSync(
-      {required String chainName, required String chainSpec, dynamic hint}) {
+      {required String chainName,
+      required String chainSpec,
+      required String database,
+      dynamic hint}) {
     var arg0 = _platform.api2wire_String(chainName);
     var arg1 = _platform.api2wire_String(chainSpec);
+    var arg2 = _platform.api2wire_String(database);
     return _platform.executeNormal(FlutterRustBridgeTask(
       callFfi: (port_) =>
-          _platform.inner.wire_start_chain_sync(port_, arg0, arg1),
+          _platform.inner.wire_start_chain_sync(port_, arg0, arg1, arg2),
       parseSuccessData: _wire2api_unit,
       constMeta: kStartChainSyncConstMeta,
-      argValues: [chainName, chainSpec],
+      argValues: [chainName, chainSpec, database],
       hint: hint,
     ));
   }
@@ -111,7 +118,7 @@ class SmoldotFlutterImpl implements SmoldotFlutter {
   FlutterRustBridgeTaskConstMeta get kStartChainSyncConstMeta =>
       const FlutterRustBridgeTaskConstMeta(
         debugName: "start_chain_sync",
-        argNames: ["chainName", "chainSpec"],
+        argNames: ["chainName", "chainSpec", "database"],
       );
 
   Future<void> stopChainSync({required String chainName, dynamic hint}) {
@@ -371,21 +378,26 @@ class SmoldotFlutterWire implements FlutterRustBridgeWireBase {
     int port_,
     ffi.Pointer<wire_uint_8_list> chain_name,
     ffi.Pointer<wire_uint_8_list> chain_spec,
+    ffi.Pointer<wire_uint_8_list> database,
   ) {
     return _wire_start_chain_sync(
       port_,
       chain_name,
       chain_spec,
+      database,
     );
   }
 
   late final _wire_start_chain_syncPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Void Function(ffi.Int64, ffi.Pointer<wire_uint_8_list>,
+          ffi.Void Function(
+              ffi.Int64,
+              ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>,
               ffi.Pointer<wire_uint_8_list>)>>('wire_start_chain_sync');
   late final _wire_start_chain_sync = _wire_start_chain_syncPtr.asFunction<
-      void Function(
-          int, ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
+      void Function(int, ffi.Pointer<wire_uint_8_list>,
+          ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
 
   void wire_stop_chain_sync(
     int port_,

@@ -45,6 +45,7 @@ fn wire_start_chain_sync_impl(
     port_: MessagePort,
     chain_name: impl Wire2Api<String> + UnwindSafe,
     chain_spec: impl Wire2Api<String> + UnwindSafe,
+    database: impl Wire2Api<String> + UnwindSafe,
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
@@ -55,7 +56,8 @@ fn wire_start_chain_sync_impl(
         move || {
             let api_chain_name = chain_name.wire2api();
             let api_chain_spec = chain_spec.wire2api();
-            move |task_callback| start_chain_sync(api_chain_name, api_chain_spec)
+            let api_database = database.wire2api();
+            move |task_callback| start_chain_sync(api_chain_name, api_chain_spec, api_database)
         },
     )
 }

@@ -64,7 +64,7 @@ pub fn init_light_client() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn start_chain_sync(chain_name: String, chain_spec: String) -> anyhow::Result<()> {
+pub fn start_chain_sync(chain_name: String, chain_spec: String, database: String) -> anyhow::Result<()> {
     let mut client_lock = CLIENT.lock().unwrap();
     assert!(client_lock.is_some());
 
@@ -94,7 +94,7 @@ pub fn start_chain_sync(chain_name: String, chain_spec: String) -> anyhow::Resul
             // A database with an invalid format is simply ignored by the client.
             // In this example, we don't use this feature, and as such we simply pass an empty string,
             // which is intentionally an invalid database content.
-            database_content: "",
+            database_content: &database,
 
             // The client gives the possibility to insert an opaque "user data" alongside each chain.
             // This avoids having to create a separate `HashMap<ChainId, ...>` in parallel of the

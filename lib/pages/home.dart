@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../ffi.dart';
 import 'dart:convert';
 import 'package:vector_graphics/vector_graphics.dart';
@@ -21,8 +22,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String? currentChain;
   int? currentBlock;
+  int lastDbSnapshot = 0;
   final NumberFormat _numberFormat = NumberFormat.decimalPattern();
   StreamSubscription<String>? responseSub$;
+  SharedPreferences? sharedPreferences;
 
   @override
   void initState() {
@@ -52,6 +55,8 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    sharedPreferences ??= await SharedPreferences.getInstance();
+
     debugPrint('[HomePage] onChainSelected: $chainName');
 
     if (currentChain != null && currentChain!.isNotEmpty) {
@@ -61,6 +66,7 @@ class _HomePageState extends State<HomePage> {
       responseSub$ = null;
       currentChain = null;
       currentBlock = null;
+      lastDbSnapshot = 0;
     }
 
     debugPrint('[HomePage] loading chainspec: $chainName');
@@ -68,9 +74,12 @@ class _HomePageState extends State<HomePage> {
         .loadString("assets/chainspecs/$chainName.json")
         .then((spec) async {
       debugPrint('[HomePage] api.startChainSync: $chainName');
-      await api.startChainSync(chainName: chainName, chainSpec: spec);
+      var database = sharedPreferences!.getString(chainName);
+      await api.startChainSync(
+          chainName: chainName, chainSpec: spec, database: database ?? "");
 
       debugPrint('[HomePage] api.sendJsonRpcRequest: $chainName');
+
       await api.sendJsonRpcRequest(
           chainName: chainName,
           req:
@@ -79,16 +88,46 @@ class _HomePageState extends State<HomePage> {
       debugPrint('[HomePage] api.listenJsonRpcResponses: $chainName');
       return api
           .listenJsonRpcResponses(chainName: chainName)
-          .listen((response) {
-        final decodedData = jsonDecode(response);
-        final int? block =
-            pick(decodedData, 'params', 'result', 'number').asIntOrNull();
-        if (block != null) {
-          setState(() {
-            currentBlock = block;
-          });
+          .listen((response) async {
+        if (currentChain == null) {
+          return;
         }
-        debugPrint('JSON-RPC response: $response');
+
+        final decodedData = jsonDecode(response);
+        final id = pick(decodedData, 'id').asIntOrNull();
+        final method = pick(decodedData, 'method').asStringOrNull();
+        switch (method) {
+          case "chain_newHead":
+            final int? block =
+                pick(decodedData, 'params', 'result', 'number').asIntOrNull();
+            if (block != null) {
+              if ((block - lastDbSnapshot) >= 10) {
+                await api.sendJsonRpcRequest(
+                    chainName: currentChain!,
+                    req:
+                        "{\"id\":2,\"jsonrpc\":\"2.0\",\"method\":\"chainHead_unstable_finalizedDatabase\",\"params\":[]}");
+                setState(() {
+                  currentBlock = block;
+                  lastDbSnapshot = block;
+                });
+              } else {
+                setState(() {
+                  currentBlock = block;
+                });
+              }
+            }
+            break;
+          default:
+            if (id == 2) {
+              // Handle chainHead_unstable_finalizedDatabase result
+              final String? database =
+                  pick(decodedData, 'result').asStringOrNull();
+              if (database != null) {
+                debugPrint('[HomePage] Saving $chainName database');
+                sharedPreferences!.setString(currentChain!, database);
+              }
+            }
+        }
       });
     });
 
