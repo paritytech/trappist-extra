@@ -30,11 +30,18 @@ void wire_init_logger(int64_t port_);
 
 void wire_init_light_client(int64_t port_);
 
-void wire_json_rpc_send(int64_t port_, uintptr_t chain_id, struct wire_uint_8_list *req);
+void wire_start_chain_sync(int64_t port_,
+                           struct wire_uint_8_list *chain_name,
+                           struct wire_uint_8_list *chain_spec,
+                           struct wire_uint_8_list *database);
 
-void wire_set_json_rpc_response_sink(int64_t port_);
+void wire_stop_chain_sync(int64_t port_, struct wire_uint_8_list *chain_name);
 
-void wire_add(int64_t port_, uintptr_t left, uintptr_t right);
+void wire_send_json_rpc_request(int64_t port_,
+                                struct wire_uint_8_list *chain_name,
+                                struct wire_uint_8_list *req);
+
+void wire_listen_json_rpc_responses(int64_t port_, struct wire_uint_8_list *chain_name);
 
 struct wire_uint_8_list *new_uint_8_list_0(int32_t len);
 
@@ -44,9 +51,10 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     int64_t dummy_var = 0;
     dummy_var ^= ((int64_t) (void*) wire_init_logger);
     dummy_var ^= ((int64_t) (void*) wire_init_light_client);
-    dummy_var ^= ((int64_t) (void*) wire_json_rpc_send);
-    dummy_var ^= ((int64_t) (void*) wire_set_json_rpc_response_sink);
-    dummy_var ^= ((int64_t) (void*) wire_add);
+    dummy_var ^= ((int64_t) (void*) wire_start_chain_sync);
+    dummy_var ^= ((int64_t) (void*) wire_stop_chain_sync);
+    dummy_var ^= ((int64_t) (void*) wire_send_json_rpc_request);
+    dummy_var ^= ((int64_t) (void*) wire_listen_json_rpc_responses);
     dummy_var ^= ((int64_t) (void*) new_uint_8_list_0);
     dummy_var ^= ((int64_t) (void*) free_WireSyncReturn);
     dummy_var ^= ((int64_t) (void*) store_dart_post_cobject);
