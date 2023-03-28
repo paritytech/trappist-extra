@@ -13,7 +13,7 @@ use crate::logger;
 lazy_static! {
     static ref CLIENT: Mutex<Option<smoldot_light::Client<smoldot_light::platform::async_std::AsyncStdTcpWebSocket>>> =
         Mutex::new(None);
-    static ref CHAINS: RwLock<HashMap<String, ChainInfo>> = RwLock::new(HashMap::new());
+    static ref CHAINS: RwLock<HashMap<String, ChainId>> = RwLock::new(HashMap::new());
     static ref RPC_RESPONSE_STREAMS: RwLock<HashMap<String, JsonRpcResponses>> =
         RwLock::new(HashMap::new());
 }
@@ -23,11 +23,6 @@ pub struct LogEntry {
     pub level: i32,
     pub tag: String,
     pub msg: String,
-}
-
-struct ChainInfo {
-    pub chain_id: ChainId,
-    // pub rpc_responses: JsonRpcResponses,
 }
 
 pub fn init_logger(log_stream_sink: StreamSink<LogEntry>) -> anyhow::Result<()> {
@@ -64,7 +59,11 @@ pub fn init_light_client() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn start_chain_sync(chain_name: String, chain_spec: String, database: String) -> anyhow::Result<()> {
+pub fn start_chain_sync(
+    chain_name: String,
+    chain_spec: String,
+    database: String,
+) -> anyhow::Result<()> {
     let mut client_lock = CLIENT.lock().unwrap();
     assert!(client_lock.is_some());
 
@@ -112,7 +111,7 @@ pub fn start_chain_sync(chain_name: String, chain_spec: String, database: String
     let rpc_responses = json_rpc_responses.unwrap();
 
     let mut chains_guard = CHAINS.write();
-    chains_guard.insert(chain_name.clone(), ChainInfo { chain_id });
+    chains_guard.insert(chain_name.clone(), chain_id);
 
     let mut rpc_response_streams_guard = RPC_RESPONSE_STREAMS.write();
     rpc_response_streams_guard.insert(chain_name, rpc_responses);
@@ -133,9 +132,9 @@ pub fn stop_chain_sync(chain_name: String) -> anyhow::Result<()> {
     // Upgrade read lock to write lock
     let mut chains_write_guard =
         parking_lot::lock_api::RwLockUpgradableReadGuard::<'_, _, _>::upgrade(chains_guard);
-    if let Some(ChainInfo { chain_id: id, .. }) = chains_write_guard.remove(&chain_name) {
+    if let Some(chain_id) = chains_write_guard.remove(&chain_name) {
         // This should end the JSON-RPC response stream
-        let _: () = client.remove_chain(id);
+        let _: () = client.remove_chain(chain_id);
 
         let mut rpc_response_streams_guard = RPC_RESPONSE_STREAMS.write();
         rpc_response_streams_guard.remove(&chain_name);
@@ -145,7 +144,7 @@ pub fn stop_chain_sync(chain_name: String) -> anyhow::Result<()> {
 
 pub fn send_json_rpc_request(chain_name: String, req: String) -> anyhow::Result<()> {
     let chains_guard = CHAINS.read();
-    if let Some(ChainInfo { chain_id: id, .. }) = chains_guard.get(&chain_name) {
+    if let Some(chain_id) = chains_guard.get(&chain_name) {
         // Send a JSON-RPC request to the chain.
         // Calling this function only queues the request. It is not processed immediately.
         // An `Err` is returned immediately if and only if the request isn't a proper JSON-RPC request
@@ -155,7 +154,7 @@ pub fn send_json_rpc_request(chain_name: String, req: String) -> anyhow::Result<
         let client = client_lock.as_mut().unwrap();
 
         client
-            .json_rpc_request(req, *id)
+            .json_rpc_request(req, *chain_id)
             .map_err(anyhow::Error::msg)
             .with_context(|| {
                 format!(
