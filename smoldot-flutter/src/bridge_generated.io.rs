@@ -17,8 +17,9 @@ pub extern "C" fn wire_start_chain_sync(
     chain_name: *mut wire_uint_8_list,
     chain_spec: *mut wire_uint_8_list,
     database: *mut wire_uint_8_list,
+    relay_chain: *mut wire_uint_8_list,
 ) {
-    wire_start_chain_sync_impl(port_, chain_name, chain_spec, database)
+    wire_start_chain_sync_impl(port_, chain_name, chain_spec, database, relay_chain)
 }
 
 #[no_mangle]

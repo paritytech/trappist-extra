@@ -33,7 +33,8 @@ void wire_init_light_client(int64_t port_);
 void wire_start_chain_sync(int64_t port_,
                            struct wire_uint_8_list *chain_name,
                            struct wire_uint_8_list *chain_spec,
-                           struct wire_uint_8_list *database);
+                           struct wire_uint_8_list *database,
+                           struct wire_uint_8_list *relay_chain);
 
 void wire_stop_chain_sync(int64_t port_, struct wire_uint_8_list *chain_name);
 
