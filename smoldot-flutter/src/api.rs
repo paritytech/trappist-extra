@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Context};
-use core::iter;
 use flutter_rust_bridge::StreamSink;
 use lazy_static::lazy_static;
 use log::debug;
@@ -14,7 +13,7 @@ lazy_static! {
     static ref CLIENT: Mutex<Option<smoldot_light::Client<smoldot_light::platform::async_std::AsyncStdTcpWebSocket>>> =
         Mutex::new(None);
     static ref CHAINS: RwLock<HashMap<String, ChainId>> = RwLock::new(HashMap::new());
-    static ref RPC_RESPONSE_STREAMS: RwLock<HashMap<String, JsonRpcResponses>> =
+    static ref RPC_RESPONSE_STREAMS: RwLock<HashMap<String, JsonRpcResponse>> =
         RwLock::new(HashMap::new());
 }
 
@@ -63,6 +62,7 @@ pub fn start_chain_sync(
     chain_name: String,
     chain_spec: String,
     database: String,
+    relay_chain: Option<String>,
 ) -> anyhow::Result<()> {
     let mut client_lock = CLIENT.lock().unwrap();
     assert!(client_lock.is_some());
@@ -85,7 +85,9 @@ pub fn start_chain_sync(
             disable_json_rpc: false,
 
             // This field is necessary only if adding a parachain.
-            potential_relay_chains: iter::empty(),
+            potential_relay_chains: relay_chain
+                .and_then(|rc| CHAINS.read().get(&rc).cloned())
+                .into_iter(),
 
             // After a chain has been added, it is possible to extract a "database" (in the form of a
             // simple string). This database can later be passed back the next time the same chain is
@@ -114,7 +116,10 @@ pub fn start_chain_sync(
     chains_guard.insert(chain_name.clone(), chain_id);
 
     let mut rpc_response_streams_guard = RPC_RESPONSE_STREAMS.write();
-    rpc_response_streams_guard.insert(chain_name, rpc_responses);
+    rpc_response_streams_guard.insert(
+        chain_name,
+        JsonRpcResponse::Disconnected(Some(rpc_responses)),
+    );
 
     Ok(())
 }
@@ -168,29 +173,108 @@ pub fn send_json_rpc_request(chain_name: String, req: String) -> anyhow::Result<
     }
 }
 
+enum JsonRpcResponse {
+    Disconnected(Option<JsonRpcResponses>),
+    Connected(async_std::task::JoinHandle<()>),
+}
+
 pub fn listen_json_rpc_responses(
     chain_name: String,
     rpc_responses_sink: StreamSink<String>,
 ) -> anyhow::Result<()> {
     let mut rpc_response_streams_guard = RPC_RESPONSE_STREAMS.write();
-    if let Some(rpc_responses) = rpc_response_streams_guard.get_mut(&chain_name) {
-        // Spawn an async task and block thread and forward responses received on the channel of JSON-RPC responses
-        // to the response stream sink (towards the Dart side).
-        async_std::task::block_on(async move {
-            while let Some(response) = rpc_responses.next().await {
-                debug!(
-                    "JSON-RPC response for chain '{:?}': {}",
-                    chain_name, response
-                );
-                rpc_responses_sink.add(response);
+    if let Some(rpc_response) = rpc_response_streams_guard.get_mut(&chain_name) {
+        if let JsonRpcResponse::Disconnected(rpc_responses) = rpc_response {
+            if let Some(mut rpc_responses) = rpc_responses.take() {
+                // Spawn an async task and forward responses received on the channel of JSON-RPC responses
+                // to the response stream sink (towards the Dart side).
+                *rpc_response = JsonRpcResponse::Connected(async_std::task::spawn(async move {
+                    while let Some(response) = rpc_responses.next().await {
+                        debug!(
+                            "JSON-RPC response for chain '{:?}': {}",
+                            chain_name, response
+                        );
+                        rpc_responses_sink.add(response);
+                    }
+                    debug!(
+                        "JSON-RPC response stream for chain '{:?}' has ended.",
+                        chain_name
+                    );
+                }));
             }
-            debug!(
-                "JSON-RPC response stream for chain '{:?}' has ended.",
-                chain_name
-            );
-            Ok(())
-        })
+        }
+        Ok(())
     } else {
         Err(anyhow!("Unknown chain '{:?}'.", chain_name))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn syncs_polkadot_relay_chain() {
+        init_light_client().unwrap();
+
+        let relay_chain = String::from("Polkadot");
+        let chain_spec = fs::read_to_string("../assets/chainspecs/polkadot.json").unwrap();
+        start_chain_sync(relay_chain.clone(), chain_spec, "".into(), None).unwrap();
+        stop_chain_sync(relay_chain).unwrap();
+    }
+
+    #[test]
+    fn syncs_statemint_parachain() {
+        init_light_client().unwrap();
+
+        let relay_chain = String::from("Polkadot");
+        let chain_spec = fs::read_to_string("../assets/chainspecs/polkadot.json").unwrap();
+        start_chain_sync(relay_chain.clone(), chain_spec, "".into(), None).unwrap();
+
+        let parachain = String::from("Statemint");
+        let chain_spec = fs::read_to_string("../assets/chainspecs/statemint.json").unwrap();
+        start_chain_sync(
+            parachain.clone(),
+            chain_spec,
+            "".into(),
+            Some(relay_chain.clone()),
+        )
+        .unwrap();
+
+        stop_chain_sync(relay_chain).unwrap();
+        stop_chain_sync(parachain).unwrap();
+    }
+
+    #[test]
+    fn syncs_kusama_relay_chain() {
+        init_light_client().unwrap();
+
+        let relay_chain = String::from("Kusama");
+        let chain_spec = fs::read_to_string("../assets/chainspecs/kusama.json").unwrap();
+        start_chain_sync(relay_chain.clone(), chain_spec, "".into(), None).unwrap();
+        stop_chain_sync(relay_chain).unwrap();
+    }
+
+    #[test]
+    fn syncs_statemine_parachain() {
+        init_light_client().unwrap();
+
+        let relay_chain = String::from("Kusama");
+        let chain_spec = fs::read_to_string("../assets/chainspecs/kusama.json").unwrap();
+        start_chain_sync(relay_chain.clone(), chain_spec, "".into(), None).unwrap();
+
+        let parachain = String::from("Statemine");
+        let chain_spec = fs::read_to_string("../assets/chainspecs/statemine.json").unwrap();
+        start_chain_sync(
+            parachain.clone(),
+            chain_spec,
+            "".into(),
+            Some(relay_chain.clone()),
+        )
+        .unwrap();
+
+        stop_chain_sync(relay_chain).unwrap();
+        stop_chain_sync(parachain).unwrap();
     }
 }
