@@ -46,6 +46,7 @@ dependencies:
   vector_graphics: ^1.1.4
   flutter_launcher_icons: ^0.9.3
   shared_preferences: ^2.0.20
+  provider: ^6.0.0
 
 dev_dependencies:
   flutter_test:
