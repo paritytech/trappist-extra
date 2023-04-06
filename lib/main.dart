@@ -1,8 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 import 'package:trappist_extra/pages/home.dart';
+import 'package:trappist_extra/models/chain.dart';
 
 void main() {
-  runApp(const MyApp());
+  // Define the available chains
+  var polkadot = RelayChain("Polkadot", chainSpec("polkadot.json"),
+          logo("polkadot.svg", "Polkadot Logo"))
+      // Statemint
+      .addParachain("Statemint", chainSpec("statemint.json"),
+          logo("statemint.svg", "Statemint Logo"))
+      // BridgeHub
+      .addParachain("BridgeHub", chainSpec("bridge-hub-polkadot.json"),
+          logo("bridgehub-polkadot.svg", "BridgeHub Logo"));
+  var kusama = RelayChain(
+          "Kusama", chainSpec("kusama.json"), logo("kusama.svg", "Kusama Logo"))
+      // Statemine
+      .addParachain("Statemine", chainSpec("statemine.json"),
+          logo("statemint.svg", "Statemine Logo"))
+      // BridgeHub
+      .addParachain("BridgeHub", chainSpec("bridge-hub-kusama.json"),
+          logo("bridgehub-kusama.svg", "BridgeHub Logo"));
+
+  runApp(ChangeNotifierProvider(
+      create: (context) => Chains([polkadot, kusama]), child: const MyApp()));
+}
+
+String chainSpec(String fileName) {
+  return "assets/chainspecs/$fileName";
+}
+
+Widget logo(String assetName, String semanticsLabel) {
+  assetName = "assets/images/logos/$assetName";
+  if (assetName.endsWith(".svg")) {
+    // Note: use https://crates.io/crates/usvg to convert the source svg if not
+    // displaying correctly due to lack of CSS support in flutter_svg package
+    return SvgPicture.asset(
+      assetName,
+      semanticsLabel: semanticsLabel,
+      height: 42,
+      width: 42,
+      fit: BoxFit.fitWidth,
+    );
+
+  }
+  return Image(
+    image: AssetImage(assetName),
+    semanticLabel: semanticsLabel,
+    height: 42,
+    width: 42,
+    fit: BoxFit.fitWidth,
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -24,7 +73,8 @@ class MyApp extends StatelessWidget {
           // Notice that the counter didn't reset back to zero; the application
           // is not restarted.
           primarySwatch: Colors.pink,
-          fontFamily: 'Syncopate'),
+          fontFamily: 'Syncopate',
+          dividerColor: Colors.transparent),
       home: const HomePage(title: 'Trappist Extra'),
     );
   }
