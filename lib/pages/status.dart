@@ -17,10 +17,10 @@ class ChainSyncStatus extends StatelessWidget {
         child: Consumer<Chain>(
             builder: (context, chain, child) => Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: test(context, chain))));
+                children: buildChain(context, chain))));
   }
 
-  List<Widget> test(BuildContext context, Chain chain) {
+  List<Widget> buildChain(BuildContext context, Chain chain) {
     if (chain is Parachain) {
       return <Widget>[
         // Relay chain
@@ -45,6 +45,8 @@ class ChainSyncStatus extends StatelessWidget {
         ] else ...[
           const BlinkText('Syncing', duration: Duration(seconds: 1)),
         ],
+        const SizedBox(height: 10),
+        ...buildPeers(context, chain.relayChain),
         const SizedBox(height: 50),
         // Parachain
         const Text('Parachain:'),
@@ -67,7 +69,9 @@ class ChainSyncStatus extends StatelessWidget {
           ),
         ] else ...[
           const BlinkText('Syncing', duration: Duration(seconds: 1)),
-        ]
+        ],
+        const SizedBox(height: 10),
+        ...buildPeers(context, chain)
       ];
     }
 
@@ -92,7 +96,20 @@ class ChainSyncStatus extends StatelessWidget {
         ),
       ] else ...[
         const BlinkText('Syncing', duration: Duration(seconds: 1)),
-      ]
+      ],
+      const SizedBox(height: 20),
+      ...buildPeers(context, chain)
+    ];
+  }
+
+  List<Widget> buildPeers(BuildContext context, Chain chain) {
+    return <Widget>[
+      const Text('Peers:'),
+      Text(chain.peers.toString(),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge!
+              .copyWith(color: Colors.black, fontFamily: 'Syncopate-Bold')),
     ];
   }
 }

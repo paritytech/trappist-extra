@@ -42,8 +42,10 @@ class Chains extends ChangeNotifier {
 abstract class Chain extends ChangeNotifier {
   String _chainSpec;
   int? _currentBlock;
+  Timer? _health;
   bool _initialised = false;
   int _lastDbSnapshot = 0;
+  int _peers = 0;
   Stream<String>? _stream;
   StreamSubscription<String>? _streamSubscription;
 
@@ -68,6 +70,17 @@ abstract class Chain extends ChangeNotifier {
     return _lastDbSnapshot;
   }
 
+  set peers(int? peers) {
+    if (peers != null && peers != _peers) {
+      _peers = peers;
+      notifyListeners();
+    }
+  }
+
+  int get peers {
+    return _peers;
+  }
+
   Stream<String>? get stream {
     return _stream;
   }
@@ -78,8 +91,7 @@ abstract class Chain extends ChangeNotifier {
     if (!_initialised) {
       // Initialise chain spec
       debugPrint('[Chain] loading chain spec: $name');
-      _chainSpec =
-          await rootBundle.loadString(_chainSpec);
+      _chainSpec = await rootBundle.loadString(_chainSpec);
       _initialised = true;
     }
 
@@ -102,11 +114,23 @@ abstract class Chain extends ChangeNotifier {
     _streamSubscription = _stream!.listen((response) async {
       _processResponse(response);
     });
+
+    // Start periodic health check
+    _health = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      await _checkHealth();
+    });
   }
 
   _startChainSync(String? database) async {
     await api.startChainSync(
         chainName: name, chainSpec: _chainSpec, database: database ?? "");
+  }
+
+  _checkHealth() async {
+    await api.sendJsonRpcRequest(
+        chainName: name,
+        req:
+            "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"system_health\",\"params\":[]}");
   }
 
   _processResponse(String response) async {
@@ -128,16 +152,30 @@ abstract class Chain extends ChangeNotifier {
           } else {
             currentBlock = block;
           }
+
+          // Manually set first peer (as block received) until periodic health check
+          if (peers == 0) {
+            peers = 1;
+          }
         }
         break;
       default:
-        if (id == 2) {
-          // Handle chainHead_unstable_finalizedDatabase result
-          final String? database = pick(decodedData, 'result').asStringOrNull();
-          if (database != null) {
-            debugPrint('[Chain] Saving $name database');
-            (await _sharedPreferences).setString(name, database);
-          }
+        switch (id) {
+          case 1:
+            {
+              peers = pick(decodedData, 'result', 'peers').asIntOrNull();
+              break;
+            }
+          case 2:
+            {
+              // Handle chainHead_unstable_finalizedDatabase result
+              final String? database =
+                  pick(decodedData, 'result').asStringOrNull();
+              if (database != null) {
+                debugPrint('[Chain] Saving $name database');
+                (await _sharedPreferences).setString(name, database);
+              }
+            }
         }
     }
   }
@@ -149,6 +187,9 @@ abstract class Chain extends ChangeNotifier {
     _streamSubscription = null;
     _lastDbSnapshot = 0;
     currentBlock = null;
+    _health?.cancel();
+    _health = null;
+    _peers = 0;
   }
 
   @override
