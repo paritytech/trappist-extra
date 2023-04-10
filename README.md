@@ -4,7 +4,7 @@
 
 **Trappist Extra** is a sample mobile decentralized app that demonstrates the integration of a [light client node](https://www.parity.io/blog/introducing-substrate-connect), which enables the app to connect, quickly sync and interact with any [Substrate-based blockchains](https://github.com/paritytech/substrate/), including the [Polkadot Network](https://polkadot.network/), in a fully trustless and decentralized way.
 
-The app is built with [Flutter](https://flutter.dev/), the multi-platform app development framework; [smoldot](https://github.com/paritytech/smoldot/), a cross-platform light client node implementation written in Rust; and the [flutter_rust_bridge](https://cjycode.com/flutter_rust_bridge/), a library and code generator which enable seamless integration of native rust code in a Flutter app.
+The app is built with [Flutter](https://flutter.dev/), the multi-platform app development framework; [smoldot](https://github.com/smol-dot/smoldot/), a cross-platform light client node implementation written in Rust; and the [flutter_rust_bridge](https://cjycode.com/flutter_rust_bridge/), a library and code generator which enable seamless integration of native rust code in a Flutter app.
 
 ### Why "Trappist Extra" ?
 
