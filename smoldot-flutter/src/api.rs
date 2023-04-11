@@ -214,6 +214,8 @@ mod tests {
     use super::*;
     use std::fs;
 
+    // IMPORTANT: tests must be executed one by one.
+
     #[test]
     fn syncs_polkadot_relay_chain() {
         init_light_client().unwrap();
@@ -266,6 +268,38 @@ mod tests {
 
         let parachain = String::from("Statemine");
         let chain_spec = fs::read_to_string("../assets/chainspecs/statemine.json").unwrap();
+        start_chain_sync(
+            parachain.clone(),
+            chain_spec,
+            "".into(),
+            Some(relay_chain.clone()),
+        )
+        .unwrap();
+
+        stop_chain_sync(relay_chain).unwrap();
+        stop_chain_sync(parachain).unwrap();
+    }
+
+    #[test]
+    fn syncs_rococo_relay_chain() {
+        init_light_client().unwrap();
+
+        let relay_chain = String::from("Rococo");
+        let chain_spec = fs::read_to_string("../assets/chainspecs/rococo.json").unwrap();
+        start_chain_sync(relay_chain.clone(), chain_spec, "".into(), None).unwrap();
+        stop_chain_sync(relay_chain).unwrap();
+    }
+
+    #[test]
+    fn syncs_rockmine_parachain() {
+        init_light_client().unwrap();
+
+        let relay_chain = String::from("rococo");
+        let chain_spec = fs::read_to_string("../assets/chainspecs/rococo.json").unwrap();
+        start_chain_sync(relay_chain.clone(), chain_spec, "".into(), None).unwrap();
+
+        let parachain = String::from("Rockmine");
+        let chain_spec = fs::read_to_string("../assets/chainspecs/rockmine.json").unwrap();
         start_chain_sync(
             parachain.clone(),
             chain_spec,
