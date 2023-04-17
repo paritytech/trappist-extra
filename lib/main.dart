@@ -23,8 +23,18 @@ void main() {
       .addParachain("BridgeHub", chainSpec("bridge-hub-kusama.json"),
           logo("bridgehub-kusama.svg", "BridgeHub Logo"));
 
+  var rococo = RelayChain(
+          "Rococo", chainSpec("rococo.json"), logo("rococo.svg", "Rococo Logo"))
+      // Statemine
+      .addParachain("Rockmine", chainSpec("rockmine.json"),
+          logo("statemint.svg", "Rockmine Logo"));
+  // BridgeHub
+  // .addParachain("Bridgehub", chainSpec("bridge-hub-rococo.json"),
+  //     logo("bridgehub-kusama.svg", "BridgeHub Logo"));
+
   runApp(ChangeNotifierProvider(
-      create: (context) => Chains([polkadot, kusama]), child: const MyApp()));
+      create: (context) => Chains([polkadot, kusama, rococo]),
+      child: const MyApp()));
 }
 
 String chainSpec(String fileName) {
@@ -43,7 +53,6 @@ Widget logo(String assetName, String semanticsLabel) {
       width: 42,
       fit: BoxFit.fitWidth,
     );
-
   }
   return Image(
     image: AssetImage(assetName),
