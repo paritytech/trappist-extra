@@ -14,7 +14,7 @@ flutter_rust_bridge = "1"
 lazy_static = "1.4.0"
 log = { version = "0.4.17" }
 simplelog = "0.12.0"
-smoldot-light = { version = "0.3.0", git = "https://github.com/stiiifff/smoldot", branch = "sde-light-base-conv-chain-id" }
+smoldot-light = { git = "https://github.com/smol-dot/smoldot", branch = "main" }
 time = "0.3.17"
 # `std` feature
 async-std = { version = "1.12.0", optional = true }
@@ -26,6 +26,7 @@ oslog = "0.2.0"
 [features]
 default = ["std"]
 std = ["async-std", "parking_lot", "smoldot-light/std"]
+
 
 # [dev-dependencies]
 # env_logger = "0.10.0"
