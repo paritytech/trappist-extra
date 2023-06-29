@@ -5,13 +5,13 @@ use lazy_static::lazy_static;
 use log::debug;
 use parking_lot::RwLock;
 use smoldot_light::*;
-use std::{collections::HashMap, sync::Mutex};
+use std::{collections::HashMap, sync::{Mutex, Arc}};
 
 use crate::logger;
 
 // Inspired by https://github.com/paritytech/smoldot/blob/5b30f5e4c4f677f7c8ff4188c0440789ba3c1adb/bin/wasm-node/rust/src/lib.rs
 lazy_static! {
-    static ref CLIENT: Mutex<Option<smoldot_light::Client<smoldot_light::platform::async_std::AsyncStdTcpWebSocket>>> =
+    static ref CLIENT: Mutex<Option<smoldot_light::Client<Arc<smoldot_light::platform::default::DefaultPlatform>>>> =
         Mutex::new(None);
     static ref CHAINS: RwLock<HashMap<String, ChainId>> = RwLock::new(HashMap::new());
     static ref RPC_RESPONSE_STREAMS: RwLock<HashMap<String, JsonRpcResponse>> =
@@ -43,7 +43,7 @@ pub fn init_light_client() -> anyhow::Result<()> {
     // example, we provide `AsyncStdTcpWebSocket`, which are the "plug and play" default platform.
     let client =
         smoldot_light::Client::new(
-            smoldot_light::platform::async_std::AsyncStdTcpWebSocket::new(
+            smoldot_light::platform::default::DefaultPlatform::new(
                 env!("CARGO_PKG_NAME").into(),
                 env!("CARGO_PKG_VERSION").into(),
             ),
