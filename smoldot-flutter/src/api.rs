@@ -1,16 +1,17 @@
 use anyhow::{anyhow, Context};
+use core::num::NonZeroU32;
 use flutter_rust_bridge::StreamSink;
 use lazy_static::lazy_static;
 use log::debug;
 use parking_lot::RwLock;
 use smoldot_light::*;
-use std::{collections::HashMap, sync::Mutex};
+use std::{collections::HashMap, sync::{Mutex, Arc}};
 
 use crate::logger;
 
 // Inspired by https://github.com/paritytech/smoldot/blob/5b30f5e4c4f677f7c8ff4188c0440789ba3c1adb/bin/wasm-node/rust/src/lib.rs
 lazy_static! {
-    static ref CLIENT: Mutex<Option<smoldot_light::Client<smoldot_light::platform::async_std::AsyncStdTcpWebSocket>>> =
+    static ref CLIENT: Mutex<Option<smoldot_light::Client<Arc<smoldot_light::platform::default::DefaultPlatform>>>> =
         Mutex::new(None);
     static ref CHAINS: RwLock<HashMap<String, ChainId>> = RwLock::new(HashMap::new());
     static ref RPC_RESPONSE_STREAMS: RwLock<HashMap<String, JsonRpcResponse>> =
@@ -41,16 +42,11 @@ pub fn init_light_client() -> anyhow::Result<()> {
     // The `Client` struct requires a generic parameter that provides platform bindings. In this
     // example, we provide `AsyncStdTcpWebSocket`, which are the "plug and play" default platform.
     let client =
-        smoldot_light::Client::<smoldot_light::platform::async_std::AsyncStdTcpWebSocket>::new(
-            smoldot_light::ClientConfig {
-                // The smoldot client will need to spawn tasks that run in the background. In order to do
-                // so, we need to provide a "tasks spawner".
-                tasks_spawner: Box::new(move |_name, task| {
-                    async_std::task::spawn(task);
-                }),
-                system_name: env!("CARGO_PKG_NAME").into(),
-                system_version: env!("CARGO_PKG_VERSION").into(),
-            },
+        smoldot_light::Client::new(
+            smoldot_light::platform::default::DefaultPlatform::new(
+                env!("CARGO_PKG_NAME").into(),
+                env!("CARGO_PKG_VERSION").into(),
+            ),
         );
 
     *client_lock = Some(client);
@@ -80,9 +76,23 @@ pub fn start_chain_sync(
             // chain.
             specification: &chain_spec,
 
-            // If `true`, the chain will not be able to handle JSON-RPC requests. This can be used
-            // to save up some resources.
-            disable_json_rpc: false,
+            // Configures some constants about the JSON-RPC endpoints.
+            // It is also possible to pass `Disabled`, in which case the chain will not be able to
+            // handle JSON-RPC requests. This can be used to save up some resources.
+            json_rpc: smoldot_light::AddChainConfigJsonRpc::Enabled {
+                // Maximum number of JSON-RPC in the queue of requests waiting to be processed.
+                // This parameter is necessary for situations where the JSON-RPC clients aren't
+                // trusted. If you control all the requests that are sent out and don't want them
+                // to fail, feel free to pass `u32::max_value()`.
+                max_pending_requests: NonZeroU32::new(128).unwrap(),
+                // Maximum number of active subscriptions before new ones are automatically
+                // rejected. Any JSON-RPC request that causes the server to generate notifications
+                // counts as a subscription.
+                // While a typical reasonable value would be for example 64, existing UIs tend to
+                // start a lot of subscriptions, and a value such as 1024 is recommended.
+                // Similarly, if you don't want any limit, feel free to pass `u32::max_value()`.
+                max_subscriptions: 1024,
+            },
 
             // This field is necessary only if adding a parachain.
             potential_relay_chains: relay_chain
